@@ -5,11 +5,12 @@ from tensorflow.keras.models import load_model
 from facedet import SCRFD
 from math import hypot
 from common_cv import get_bbox
+from common_cv import EmotionModel
 
 class AIModel:
     # Initialise models
     def __init__(self):
-        self.emotion_model = load_model('models/emotion_recognition.h5', compile=False)
+        self.emotion_model = EmotionModel('models/fer2013_model.pth')
 
         # SCRFD Face Detector
         self.face_detector = SCRFD(model_path="models/det_10g.onnx")
@@ -108,8 +109,7 @@ class AIModel:
                 self.detect_emotion(gray)
                 ci = self.gen_concentration_index()
 
-                emotions = {0: 'Angry', 1: 'Fear', 2: 'Happy', 3: 'Sad', 4: 'Surprised', 5: 'Neutral'}
-                cv2.putText(frame, emotions[self.emotion], (50, 150), font, 2, (0, 0, 255), 3)
+                cv2.putText(frame, self.emotion, (50, 150), font, 2, (0, 0, 255), 3)
                 cv2.putText(frame, ci, (50, 250), font, 2, (0, 0, 255), 3)
 
                 self.x = gaze_ratio_lr
@@ -118,29 +118,10 @@ class AIModel:
 
         return frame
 # Function for detecting emotion 
-
     def detect_emotion(self, gray):
-        emotions = {0: 'Angry', 1: 'Fear', 2: 'Happy', 3: 'Sad', 4: 'Surprised', 5: 'Neutral'}
-
-        # Convert grayscale to RGB to match face detector input expectations
-        gray_rgb = cv2.cvtColor(gray, cv2.COLOR_GRAY2RGB)
-
-        # Only predict every 5 frames
-        #if self.frame_count % 5 == 0:
         try:
-            for bbox, _ in zip(self.bboxes, self.keypoints):
-                x, y, x1, y1 = map(int, bbox[:4])
-                cropped_face = gray[y:y1, x:x1]
-
-                # Ensure the cropped face is valid before resizing
-                if cropped_face.shape[0] > 0 and cropped_face.shape[1] > 0:
-                    test_image = cv2.resize(cropped_face, (48, 48))
-                    test_image = test_image.reshape([-1, 48, 48, 1])
-                    test_image = np.multiply(test_image, 1.0 / 255.0)
-
-                    probab = self.emotion_model.predict(test_image)[0] * 100
-                    label = np.argmax(probab)
-                    self.emotion = label
+            max_emotion, rounded_scores = self.emotion_model.execute_prediction(gray,self.bboxes,self.keypoints)
+            self.emotion = max_emotion
         except:
             pass
 
@@ -158,8 +139,8 @@ class AIModel:
 
     def gen_concentration_index(self):
         weight = 0
-        emotionweights = {0: 0.25, 1: 0.3, 2: 0.6,
-                          3: 0.3, 4: 0.6, 5: 0.9}
+        emotionweights = {'Angry': 0.25, 'Fear': 0.3, 'Happy': 0.6,
+                          'Sad': 0.3, 'Surprised': 0.6, 'Neutral': 0.9}
 
 
 # 	      Open Semi Close
