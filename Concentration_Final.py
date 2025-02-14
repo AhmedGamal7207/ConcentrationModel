@@ -114,8 +114,9 @@ class AIModel:
             landmarks = self.get_landmarks(frame)
 
             if landmarks:
-                left_eye_ratio = self.get_blinking_ratio(frame, [362,286,387,263,347,347], landmarks)
-                gaze_ratio_lr, gaze_ratio_ud = self.get_gaze_ratio(frame, [362,286,387,263,347,347], landmarks, gray)
+                LEFT_EYE_POINTS = [33, 160, 158, 133, 153, 144]
+                left_eye_ratio = self.get_blinking_ratio(frame, LEFT_EYE_POINTS, landmarks)
+                gaze_ratio_lr, gaze_ratio_ud = self.get_gaze_ratio(frame, LEFT_EYE_POINTS, landmarks, gray)
 
                 benchmark.append([gaze_ratio_lr, gaze_ratio_ud, left_eye_ratio])
                 self.detect_emotion(gray)
