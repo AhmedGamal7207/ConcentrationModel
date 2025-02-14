@@ -8,3 +8,6 @@ onnxruntime==1.20.1
 pillow==11.1.0
 torch==2.6.0
 torchvision==0.21.0
+mediapipe==0.10.21
+## instead of pip install ml_dtypes==0.2.0, runned: pip install --upgrade "ml_dtypes<0.3"
+ml_dtypes==0.2.0

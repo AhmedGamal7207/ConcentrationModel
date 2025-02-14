@@ -6,6 +6,7 @@ from facedet import SCRFD
 from math import hypot
 from common_cv import get_bbox
 from common_cv import EmotionModel
+import mediapipe as mp
 
 class AIModel:
     # Initialise models
@@ -16,7 +17,7 @@ class AIModel:
         self.face_detector = SCRFD(model_path="models/det_10g.onnx")
 
         # dlib Face Landmarks Detector
-        self.predictor = dlib.shape_predictor("models/shape_predictor_68_face_landmarks.dat")
+        #self.predictor = dlib.shape_predictor("models/shape_predictor_68_face_landmarks.dat")
         self.detector = dlib.get_frontal_face_detector()
 
         self.x = 0
@@ -27,14 +28,25 @@ class AIModel:
 
         self.bboxes = []
         self.keypoints = []
+        self.mp_face_mesh = mp.solutions.face_mesh
+        self.face_mesh = self.mp_face_mesh.FaceMesh(static_image_mode=False, max_num_faces=1)
 
-    # Function to detect facial landmarks
-    def get_landmarks(self, image):
+        # Function to detect facial landmarks
+    '''def get_landmarks(self, image):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         faces = self.detector(gray)
         if faces:
             shape = self.predictor(gray, faces[0])
             landmarks = [(shape.part(i).x, shape.part(i).y) for i in range(68)]
+            return landmarks
+        return None'''
+
+    def get_landmarks(self, image):
+        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = self.face_mesh.process(rgb_image)
+        
+        if results.multi_face_landmarks:
+            landmarks = [(int(lm.x * image.shape[1]), int(lm.y * image.shape[0])) for lm in results.multi_face_landmarks[0].landmark]
             return landmarks
         return None
 
@@ -102,8 +114,8 @@ class AIModel:
             landmarks = self.get_landmarks(frame)
 
             if landmarks:
-                left_eye_ratio = self.get_blinking_ratio(frame, [36, 37, 38, 39, 40, 41], landmarks)
-                gaze_ratio_lr, gaze_ratio_ud = self.get_gaze_ratio(frame, [36, 37, 38, 39, 40, 41], landmarks, gray)
+                left_eye_ratio = self.get_blinking_ratio(frame, [362,286,387,263,347,347], landmarks)
+                gaze_ratio_lr, gaze_ratio_ud = self.get_gaze_ratio(frame, [362,286,387,263,347,347], landmarks, gray)
 
                 benchmark.append([gaze_ratio_lr, gaze_ratio_ud, left_eye_ratio])
                 self.detect_emotion(gray)
